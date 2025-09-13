@@ -20,10 +20,12 @@ import { formatUsd, formatPct, computeUtilization } from "@/lib/math"
 import type { AssetSymbol, ActionType } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 
 export default function ActionsPage() {
   const router = useRouter()
-  const { markets, setMarkets, isConnected, walletAddress, userPortfolio, setUserPortfolio } = useAppStore()
+  const { markets, setMarkets, userPortfolio, setUserPortfolio } = useAppStore()
+  const currentAccount = useCurrentAccount()
   const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState<ActionType>("supply")
@@ -48,14 +50,14 @@ export default function ActionsPage() {
         }
       }
 
-      if (isConnected && walletAddress) {
-        const portfolio = await getUser(walletAddress)
+      if (currentAccount) {
+        const portfolio = await getUser(currentAccount.address)
         setUserPortfolio(portfolio)
       }
     }
 
     loadData()
-  }, [markets.length, setMarkets, isConnected, walletAddress, setUserPortfolio])
+  }, [markets.length, setMarkets, currentAccount, setUserPortfolio])
 
   useEffect(() => {
     if (selectedMarket && activeTab === "supply") {
@@ -78,7 +80,7 @@ export default function ActionsPage() {
   }
 
   const handleSubmit = async () => {
-    if (!walletAddress || !amount || !selectedAsset || Number.parseFloat(amount) <= 0) return
+    if (!currentAccount || !amount || !selectedAsset || Number.parseFloat(amount) <= 0) return
 
     setIsLoading(true)
     try {
@@ -86,9 +88,9 @@ export default function ActionsPage() {
       let result
 
       if (activeTab === "supply") {
-        result = await supply(walletAddress, selectedAsset, amountNum)
+        result = await supply(currentAccount.address, selectedAsset, amountNum)
       } else {
-        result = await borrow(walletAddress, selectedAsset, amountNum)
+        result = await borrow(currentAccount.address, selectedAsset, amountNum)
       }
 
       if (result.status === "success") {
@@ -96,7 +98,7 @@ export default function ActionsPage() {
         setTxDialogOpen(true)
 
         // Refresh user portfolio
-        const updatedPortfolio = await getUser(walletAddress)
+        const updatedPortfolio = await getUser(currentAccount.address)
         setUserPortfolio(updatedPortfolio)
 
         // Reset form
@@ -119,7 +121,7 @@ export default function ActionsPage() {
   }
 
   const calculateHealthFactorChange = () => {
-    if (!userPortfolio || !amount || !selectedMarket) return userPortfolio.healthFactor
+    if (!userPortfolio || !amount || !selectedMarket) return '0'
 
     const amountNum = Number.parseFloat(amount)
     const usdValue = amountNum * selectedMarket.priceUsd
@@ -139,7 +141,7 @@ export default function ActionsPage() {
   const amountNum = Number.parseFloat(amount) || 0
   const usdValue = selectedMarket ? amountNum * selectedMarket.priceUsd : 0
 
-  const canSubmit = isConnected && amount && amountNum > 0 && selectedAsset && !isLoading
+  const canSubmit = currentAccount && amount && amountNum > 0 && selectedAsset && !isLoading
 
   return (
     <div className="min-h-screen bg-background">
@@ -446,7 +448,7 @@ export default function ActionsPage() {
                         {isLoading ? "Processing..." : `Confirm ${activeTab}`}
                       </Button>
 
-                      {!isConnected && (
+                      {!currentAccount && (
                         <div className="text-center text-sm text-muted-foreground">Connect your wallet to continue</div>
                       )}
                     </>
@@ -457,7 +459,7 @@ export default function ActionsPage() {
           </Card>
 
           {/* Quick Actions */}
-          {isConnected && userPortfolio && userPortfolio.positions.length > 0 && (
+          {currentAccount && userPortfolio && userPortfolio.positions.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>

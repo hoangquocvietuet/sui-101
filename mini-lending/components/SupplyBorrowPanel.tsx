@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { X, AlertTriangle, Info, Calculator } from "lucide-react"
 import { formatUsd } from "@/lib/math"
 import { useAppStore } from "@/lib/store"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 import { supply, borrow, withdraw, repay, getUser } from "@/lib/mockApi"
 import type { AssetSymbol, ActionType } from "@/lib/types"
 import { TxDialog } from "./TxDialog"
@@ -35,7 +36,8 @@ export function SupplyBorrowPanel({
   calculatorSupplyAmount,
   calculatorBorrowAmount,
 }: SupplyBorrowPanelProps) {
-  const { markets, isConnected, walletAddress, userPortfolio, setUserPortfolio } = useAppStore()
+  const { markets, userPortfolio, setUserPortfolio } = useAppStore()
+  const currentAccount = useCurrentAccount()
   const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState<ActionType>(initialAction)
@@ -97,7 +99,7 @@ export function SupplyBorrowPanel({
   }
 
   const handleSubmit = async () => {
-    if (!walletAddress || !amount || Number.parseFloat(amount) <= 0) return
+    if (!currentAccount?.address || !amount || Number.parseFloat(amount) <= 0) return
 
     setIsLoading(true)
     try {
@@ -106,16 +108,16 @@ export function SupplyBorrowPanel({
 
       switch (activeTab) {
         case "supply":
-          result = await supply(walletAddress, selectedAsset, amountNum)
+          result = await supply(currentAccount.address, selectedAsset, amountNum)
           break
         case "borrow":
-          result = await borrow(walletAddress, selectedAsset, amountNum)
+          result = await borrow(currentAccount.address, selectedAsset, amountNum)
           break
         case "withdraw":
-          result = await withdraw(walletAddress, selectedAsset, amountNum)
+          result = await withdraw(currentAccount.address, selectedAsset, amountNum)
           break
         case "repay":
-          result = await repay(walletAddress, selectedAsset, amountNum)
+          result = await repay(currentAccount.address, selectedAsset, amountNum)
           break
       }
 
@@ -124,7 +126,7 @@ export function SupplyBorrowPanel({
         setTxDialogOpen(true)
 
         // Refresh user portfolio
-        const updatedPortfolio = await getUser(walletAddress)
+        const updatedPortfolio = await getUser(currentAccount.address)
         setUserPortfolio(updatedPortfolio)
 
         // Reset form
@@ -173,7 +175,7 @@ export function SupplyBorrowPanel({
   const amountNum = Number.parseFloat(amount) || 0
   const usdValue = amountNum * market.priceUsd
 
-  const canSubmit = isConnected && amount && amountNum > 0 && !isLoading
+  const canSubmit = currentAccount?.address && amount && amountNum > 0 && !isLoading
 
   return (
     <>
@@ -393,7 +395,7 @@ export function SupplyBorrowPanel({
               {isLoading ? "Processing..." : `Confirm ${activeTab}`}
             </Button>
 
-            {!isConnected && (
+            {!currentAccount && (
               <div className="text-center text-sm text-muted-foreground">Connect your wallet to continue</div>
             )}
           </CardContent>

@@ -17,6 +17,7 @@ import {
   Plus,
   Minus,
   ArrowRightLeft,
+  User,
 } from "lucide-react"
 import { Stat } from "@/components/Stat"
 import { HealthFactorBar } from "@/components/HealthFactorBar"
@@ -27,10 +28,12 @@ import { getMarkets, getUser } from "@/lib/mockApi"
 import { formatUsd, toTokenAmt, computeUtilization } from "@/lib/math"
 import type { AssetSymbol, ActionType } from "@/lib/types"
 import Image from "next/image"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 
 export default function PortfolioPage() {
   const router = useRouter()
-  const { markets, setMarkets, isConnected, walletAddress, userPortfolio, setUserPortfolio } = useAppStore()
+  const { markets, setMarkets, userPortfolio, setUserPortfolio } = useAppStore()
+  const currentAccount = useCurrentAccount()
 
   const [supplyBorrowPanelOpen, setSupplyBorrowPanelOpen] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<AssetSymbol | null>(null)
@@ -43,14 +46,14 @@ export default function PortfolioPage() {
         setMarkets(marketData)
       }
 
-      if (isConnected && walletAddress) {
-        const portfolio = await getUser(walletAddress)
+      if (currentAccount) {
+        const portfolio = await getUser(currentAccount.address)
         setUserPortfolio(portfolio)
       }
     }
 
     loadData()
-  }, [markets.length, setMarkets, isConnected, walletAddress, setUserPortfolio])
+  }, [markets.length, setMarkets, currentAccount, setUserPortfolio])
 
   const handleAction = (symbol: AssetSymbol, action: ActionType) => {
     setSelectedAsset(symbol)
@@ -101,7 +104,7 @@ export default function PortfolioPage() {
 
   const riskWarnings = getRiskWarnings()
 
-  if (!isConnected) {
+  if (!currentAccount) {
     return (
       <div className="min-h-screen bg-background">
         {/* Header */}
@@ -170,6 +173,12 @@ export default function PortfolioPage() {
                 <ArrowRightLeft className="h-4 w-4" />
                 Actions
               </Button>
+              {currentAccount && (
+                <Button variant="outline" onClick={() => router.push("/portfolio")} className="gap-2">
+                  <User className="h-4 w-4" />
+                  Portfolio
+                </Button>
+              )}
               <ConnectWalletButton />
             </div>
           </div>

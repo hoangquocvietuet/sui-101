@@ -12,10 +12,12 @@ import { formatUsd, formatPct, computeUtilization } from "@/lib/math"
 import type { AssetSymbol, ActionType } from "@/lib/types"
 import { Banknote, User, ArrowRightLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 
 export default function MarketsPage() {
   const router = useRouter()
-  const { markets, setMarkets, setLoading, isConnected, walletAddress, setUserPortfolio } = useAppStore()
+  const { markets, setMarkets, setLoading, setUserPortfolio } = useAppStore()
+  const currentAccount = useCurrentAccount()
   const [supplyBorrowPanelOpen, setSupplyBorrowPanelOpen] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<AssetSymbol | null>(null)
   const [actionType, setActionType] = useState<ActionType>("supply")
@@ -38,9 +40,9 @@ export default function MarketsPage() {
 
   useEffect(() => {
     async function loadUserPortfolio() {
-      if (isConnected && walletAddress) {
+      if (currentAccount) {
         try {
-          const portfolio = await getUser(walletAddress)
+          const portfolio = await getUser(currentAccount.address)
           setUserPortfolio(portfolio)
         } catch (error) {
           console.error("Failed to load user portfolio:", error)
@@ -51,7 +53,7 @@ export default function MarketsPage() {
     }
 
     loadUserPortfolio()
-  }, [isConnected, walletAddress, setUserPortfolio])
+  }, [currentAccount, setUserPortfolio])
 
   const handleSupply = (symbol: AssetSymbol) => {
     setSelectedAsset(symbol)
@@ -93,7 +95,7 @@ export default function MarketsPage() {
                 <ArrowRightLeft className="h-4 w-4" />
                 Actions
               </Button>
-              {isConnected && (
+              {currentAccount && (
                 <Button variant="outline" onClick={() => router.push("/portfolio")} className="gap-2">
                   <User className="h-4 w-4" />
                   Portfolio

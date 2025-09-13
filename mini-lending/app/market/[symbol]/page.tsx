@@ -17,6 +17,7 @@ import { formatUsd, formatPct, computeUtilization, toTokenAmt } from "@/lib/math
 import type { AssetSymbol, ActionType } from "@/lib/types"
 import Image from "next/image"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 
 // Mock utilization history data
 const mockUtilizationHistory = [
@@ -32,7 +33,8 @@ const mockUtilizationHistory = [
 export default function MarketDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { markets, setMarkets, isConnected, walletAddress, userPortfolio, setUserPortfolio } = useAppStore()
+  const { markets, setMarkets, userPortfolio, setUserPortfolio } = useAppStore()
+  const currentAccount = useCurrentAccount()
 
   const [supplyBorrowPanelOpen, setSupplyBorrowPanelOpen] = useState(false)
   const [actionType, setActionType] = useState<ActionType>("supply")
@@ -50,14 +52,14 @@ export default function MarketDetailPage() {
         setMarkets(marketData)
       }
 
-      if (isConnected && walletAddress && !userPortfolio) {
-        const portfolio = await getUser(walletAddress)
+      if (currentAccount && !userPortfolio) {
+        const portfolio = await getUser(currentAccount.address)
         setUserPortfolio(portfolio)
       }
     }
 
     loadData()
-  }, [markets.length, setMarkets, isConnected, walletAddress, userPortfolio, setUserPortfolio])
+  }, [markets.length, setMarkets, currentAccount, userPortfolio, setUserPortfolio])
 
   if (!market) {
     return (
@@ -271,7 +273,7 @@ export default function MarketDetailPage() {
               </div>
 
               {/* User Position */}
-              {isConnected && userPosition && (
+              {currentAccount && userPosition && (
                 <PositionCard position={userPosition} market={market} onAction={handleAction} />
               )}
             </TabsContent>
@@ -319,14 +321,14 @@ export default function MarketDetailPage() {
                     <Button
                       onClick={() => handleAction("borrow")}
                       className="w-full"
-                      disabled={!isConnected || (userPortfolio?.totalSuppliedUsd || 0) === 0}
+                      disabled={!currentAccount || (userPortfolio?.totalSuppliedUsd || 0) === 0}
                     >
                       Borrow {market.symbol}
                     </Button>
-                    {!isConnected && (
+                    {!currentAccount && (
                       <p className="text-xs text-muted-foreground text-center">Connect wallet to borrow</p>
                     )}
-                    {isConnected && (userPortfolio?.totalSuppliedUsd || 0) === 0 && (
+                    {currentAccount && (userPortfolio?.totalSuppliedUsd || 0) === 0 && (
                       <p className="text-xs text-muted-foreground text-center">Supply collateral first to borrow</p>
                     )}
                   </CardContent>

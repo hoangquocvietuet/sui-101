@@ -8,10 +8,10 @@ import { formatUsd } from "@/lib/math"
 
 import { useState } from "react"
 export function ConnectWalletButton() {
-	const currentAccount = useCurrentAccount();
+  const currentAccount = useCurrentAccount();
   const { clearUserData } = useAppStore()
-	const [open, setOpen] = useState(false);
-	const { mutate: disconnect } = useDisconnectWallet();
+  const [open, setOpen] = useState(false);
+  const { mutate: disconnect } = useDisconnectWallet();
 
   if (currentAccount) {
     return (
@@ -27,12 +27,12 @@ export function ConnectWalletButton() {
   }
 
   return (
-		<ConnectModal
-			trigger={
-				<button disabled={!!currentAccount}> {currentAccount ? 'Connected' : 'Connect'}</button>
-			}
-			open={open}
-			onOpenChange={(isOpen) => setOpen(isOpen)}
-		/>
+    <ConnectModal
+      trigger={
+        <button disabled={!!currentAccount}> {currentAccount ? 'Connected' : 'Connect'}</button>
+      }
+      open={open}
+      onOpenChange={(isOpen) => setOpen(isOpen)}
+    />
   )
 }
